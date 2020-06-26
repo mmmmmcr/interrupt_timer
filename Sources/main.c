@@ -33,10 +33,21 @@ typedef	long			int32;
 
 
 
-long count=1;
-int cycle=1;
-int init=8;//initializam cu 8 ca sa ne asiguram ca init%8==0 este adevarat din start
+int count=5;
+int cycle=5;
+int state_check=0;
+int intrrupt_state=1;
+int led_state=1;
+int inactive_five=1;
+
 void PeriphInit(void);
+
+void setKBI(){
+	
+	b_SetBit(2, KBI1SC);
+	b_SetBit(1, KBI1SC);
+	
+}
 
 void main(void) 
 {
@@ -50,36 +61,67 @@ interrupt VNTimer void TPM1_overflow()
 	byte varTOF; 
 	varTOF = TPM1SC_TOF; // clear TOF; first read and then write 0 to the flag
 	TPM1SC_TOF = 0;
+
+	if(state_check){
+	
 	if(count%cycle==0){//va fi adevarata cand count atinge val cycle sau daca e multiplu de cycle
-						//asa putem sa tinem evidenta  clockului si sa executam la cycle sec bazandu-ne pe faptul ca timer-ul nostru initial executa comanda la 1 sec; 
-		if(init%8==0){//initializam PTFD cu 0b00000001 pentru a putea deplasa dupa bitul->asa aprindem becurile pe rand
-					//se va initializa de fiecare data cand face un ciclu complet de 8 leduri
-				PTFD=0b00000001;
-				init=8;
-				init++;
-				count=1;//resetam count la 1 pt a numara x intreruperi de 1 secunda determinate de timer
-						//nu il punem pe intreruperea data de push button deoarece ar trece instant la urmatorul led,
-						//dar aici asteapta pana cand atinge x secunde chiar daca marim timpul de pe buton
+		//asa putem sa tinem evidenta  clockului si sa executam la cycle sec bazandu-ne pe faptul ca timer-ul nostru initial executa comanda la 1 sec;
+		count=0;
+		switch (inactive_five){
+				case 1:
+					b_ClearBit(1, KBI1SC);
+					break;
+				case 2:
+					setKBI();
+					inactive_five++;
+					break;
+					
 				}
-			else{
-				init++;
-				PTFD=(PTFD<<1);//deplasam bit-ul la stanga
-				}
+		if(inactive_five==1){
+			inactive_five++;
+			} 
+		if(led_state)
+			{
+
+				led_state = 0;
+				PTFD_PTFD0=1;
+				
+			}
+		else
+			{
+				PTFD_PTFD0=0;
+				led_state = 1;
+			}
+		
 	}
+  }
+	
 	count++;
 }
 
 interrupt VNkeyboard void intKBI_SW()
 
 {
-	//__RESET_WATCHDOG();
+	
 	KBI1SC_KBACK = 1; //acknowledge interrupt
-	//turn off and on led
-	cycle=cycle*2;//marim cu 2 cand apasam butonul de fiecare data si initializam caunt cu 1 pentru a ne asigura ca prindem  cicli de clock  
+	if(intrrupt_state)
+		{
+			inactive_five=1;
+			state_check=1;
+			count=5;//ca sa nu asteptam 5 secunde dupa ce apsam butonul prima data
+			intrrupt_state=0;
+		}
+		else
+		{	
+			
+			intrrupt_state=1;
+			PTFD_PTFD0=0;
+			state_check=0;//facem ca conditia din timer sa nu fie valida ca becul sa ramana in pozitia aprins(initiala)
+		}
+	
 	
 }
-//in loc de varianta curenta pt rezolvarea problemei puteam sa modificam registrii modulo cand aveam intrerupere push button 
-//,dar depindeam de frecventa deoarece puteam depasi numarul de 65 535;
+
 void PeriphInit()
 {	
 		SOPT = 0x00; // Disable watchdog
@@ -95,8 +137,8 @@ void PeriphInit()
 		
 		PTDPE_PTDPE2=1;//port D2 active for push button interrupt
 		
-	    PTFDD = 0xFF; // set PORTF direction as output
-	    PTFD = 0x00; // Turn on LEDs
+		PTFDD_PTFDD0 = 1; // set PORTF0 direction as output
+	    PTFD_PTFD0 = 0; // Turn on LEDs
 	    //timer:
 	    	ICGC2 = 0X00; // Set up ICG control register 2
 	    	ICGC1 = 0X78; // Set up ICG for FEE, 4MHz external crystal
@@ -115,3 +157,5 @@ void PeriphInit()
 		
 		while ( b_CheckBit(ICGS1,3) == 0){}
 }
+
+

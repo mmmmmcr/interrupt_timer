@@ -6,6 +6,6 @@
 
 export HC08ToolsEnv=$(CWInstallLocationEnv)/MCU/prog
 export GNU_Make_Install_DirEnv=$(CWInstallLocationEnv)/gnu/bin
-export ProjDirPath=C:/Users/bmami/Documents/conti/intreruperi_timer
+export ProjDirPath=C:/Users/bmami/Documents/conti/timer_interrupt2
 export CWInstallLocationEnv=C:/Freescale/CW MCU v11.1
 export MCUToolsBaseDirEnv=$(CWInstallLocationEnv)/MCU

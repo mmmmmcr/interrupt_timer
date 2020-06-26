@@ -57,22 +57,22 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-intreruperi_timer.abs \
+timer_interrupt2.abs \
 
 EXECUTABLES_QUOTED += \
-"intreruperi_timer.abs" \
+"timer_interrupt2.abs" \
 
 EXECUTABLES_OS_FORMAT += \
-intreruperi_timer.abs \
+timer_interrupt2.abs \
 
 BURNER_OUTPUT_OUTPUTS += \
-intreruperi_timer.abs.s19 \
+timer_interrupt2.abs.s19 \
 
 BURNER_OUTPUT_OUTPUTS_QUOTED += \
-"intreruperi_timer.abs.s19" \
+"timer_interrupt2.abs.s19" \
 
 BURNER_OUTPUT_OUTPUTS_OS_FORMAT += \
-intreruperi_timer.abs.s19 \
+timer_interrupt2.abs.s19 \
 
 
 # All Target
@@ -83,30 +83,30 @@ call-burner := 1
 endif
 endif
 ifeq ($(call-burner),1)
-all: intreruperi_timer.abs intreruperi_timer.abs.s19
+all: timer_interrupt2.abs timer_interrupt2.abs.s19
 else
-all: intreruperi_timer.abs
+all: timer_interrupt2.abs
 endif
 
 # Tool invocations
-intreruperi_timer.abs: $(OBJS) $(USER_OBJS) ../Project_Settings/Linker_Files/Project.prm
+timer_interrupt2.abs: $(OBJS) $(USER_OBJS) ../Project_Settings/Linker_Files/Project.prm
 	@echo 'Building target: $@'
 	@echo 'Executing target #4 $@'
 	@echo 'Invoking: S08 Linker'
-	"$(HC08ToolsEnv)/linker" -ArgFile"intreruperi_timer.args" -O"intreruperi_timer.abs"
+	"$(HC08ToolsEnv)/linker" -ArgFile"timer_interrupt2.args" -O"timer_interrupt2.abs"
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-intreruperi_timer.abs.s19: $(BBL_SRCS) $(EXECUTABLES)
+timer_interrupt2.abs.s19: $(BBL_SRCS) $(EXECUTABLES)
 	@echo 'Executing target #5 $@'
 	@echo 'Invoking: S08 Burner'
-	"$(HC08ToolsEnv)/burner" -ArgFile"intreruperi_timer.abs.args" -f="$<" -env"ABS_FILE=$(strip $(EXECUTABLES_OS_FORMAT))"
+	"$(HC08ToolsEnv)/burner" -ArgFile"timer_interrupt2.abs.args" -f="$<" -env"ABS_FILE=$(strip $(EXECUTABLES_OS_FORMAT))"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(S_DEPS_QUOTED) "./*/*.obj" "./*/*/*.obj"  $(CPP_DEPS_QUOTED) $(CC_DEPS_QUOTED) $(S_UPPER_DEPS_QUOTED) $(CXX_DEPS_QUOTED) $(ASM_DEPS_QUOTED) $(BURNER_OUTPUT_OUTPUTS_QUOTED) $(ASM_UPPER_DEPS_QUOTED) $(C_UPPER_DEPS_QUOTED) $(C++_DEPS_QUOTED) $(EXECUTABLES_QUOTED) "./*/*.d" "./*/*/*.d"  $(ProjDirPath)/FLASH/intreruperi_timer.abs $(ProjDirPath)/FLASH/intreruperi_timer.abs.args $(ProjDirPath)/FLASH/intreruperi_timer.abs.s19 $(ProjDirPath)/FLASH/intreruperi_timer.args $(ProjDirPath)/FLASH/intreruperi_timer.map
+	-$(RM) $(S_DEPS_QUOTED) "./*/*.obj" "./*/*/*.obj"  $(CPP_DEPS_QUOTED) $(CC_DEPS_QUOTED) $(S_UPPER_DEPS_QUOTED) $(CXX_DEPS_QUOTED) $(ASM_DEPS_QUOTED) $(BURNER_OUTPUT_OUTPUTS_QUOTED) $(ASM_UPPER_DEPS_QUOTED) $(C_UPPER_DEPS_QUOTED) $(C++_DEPS_QUOTED) $(EXECUTABLES_QUOTED) "./*/*.d" "./*/*/*.d"  $(ProjDirPath)/FLASH/timer_interrupt2.abs $(ProjDirPath)/FLASH/timer_interrupt2.abs.args $(ProjDirPath)/FLASH/timer_interrupt2.abs.s19 $(ProjDirPath)/FLASH/timer_interrupt2.args $(ProjDirPath)/FLASH/timer_interrupt2.map
 	-@echo ' '
 
 .PHONY: all clean dependents explicit-dependencies warning-messages

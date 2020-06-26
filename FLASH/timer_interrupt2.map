@@ -1,5 +1,5 @@
 
-PROGRAM "intreruperi_timer.abs"
+PROGRAM "timer_interrupt2.abs"
 
 *********************************************************************************************
 TARGET SECTION
@@ -24,19 +24,19 @@ Entry point: 0x18DB (_Startup)
 _startupData is allocated at 0x18E4 and uses 6 Bytes
 extern struct _tagStartup {
   unsigned nofZeroOut     1
-  _Range   pZeroOut       0x100     8
-  _Copy    *toCopyDownBeg 0x1BFA
+  _Range   pZeroOut       0x100     12
+  _Copy    *toCopyDownBeg 0x1A67
 } _startupData;
 
 *********************************************************************************************
 SECTION-ALLOCATION SECTION
 Section Name                    Size  Type     From       To       Segment
 ---------------------------------------------------------------------------------------------
-.data                              8   R/W      0x100      0x107   RAM
+.data                             10   R/W      0x100      0x109   RAM
 .init                            132     R     0x1860     0x18E3   ROM
 .startData                        14     R     0x18E4     0x18F1   ROM
-.text                            776     R     0x18F2     0x1BF9   ROM
-.copy                             11     R     0x1BFA     0x1C04   ROM
+.text                            373     R     0x18F2     0x1A66   ROM
+.copy                             15     R     0x1A67     0x1A75   ROM
 .abs_section_ffe8                  2     R     0xFFE8     0xFFE9   .absSeg0
 .abs_section_ffd2                  2     R     0xFFD2     0xFFD3   .absSeg1
 .abs_section_0                     1   N/I        0x0        0x0   .absSeg2
@@ -156,12 +156,13 @@ Section Name                    Size  Type     From       To       Segment
 .abs_section_1810                  2   N/I     0x1810     0x1811   .absSeg116
 .abs_section_1812                  2   N/I     0x1812     0x1813   .absSeg117
 .abs_section_1814                  2   N/I     0x1814     0x1815   .absSeg118
-.stack                           128   R/W      0x108      0x187   RAM
+.bss                               2   R/W      0x10A      0x10B   RAM
+.stack                           128   R/W      0x10C      0x18B   RAM
 .vectSeg119_vect                   2     R     0xFFFE     0xFFFF   .vectSeg119
 
 Summary of section sizes per section type:
-READ_ONLY (R):         3AB (dec:      939)
-READ_WRITE (R/W):       88 (dec:      136)
+READ_ONLY (R):         21C (dec:      540)
+READ_WRITE (R/W):       8C (dec:      140)
 NO_INIT (N/I):          8A (dec:      138)
 
 *********************************************************************************************
@@ -176,14 +177,18 @@ OBJECT-ALLOCATION SECTION
 ---------------------------------------------------------------------------------------------
 MODULE:                 -- main_c.obj --
 - PROCEDURES:
-     main                                      18F2       6       6       1   .text       
-     TPM1_overflow                             18F8      61      97       1   .text       
-     intKBI_SW                                 1959       B      11       1   .text       
-     PeriphInit                                1964      2D      45       1   .text       
+     setKBI                                    18F2       5       5       1   .text       
+     main                                      18F7       6       6       1   .text       
+     TPM1_overflow                             18FD      6A     106       1   .text       
+     intKBI_SW                                 1967      2A      42       1   .text       
+     PeriphInit                                1991      2C      44       1   .text       
 - VARIABLES:
-     count                                      100       4       4       4   .data       
-     cycle                                      104       2       2       2   .data       
-     init                                       106       2       2       4   .data       
+     count                                      100       2       2       4   .data       
+     cycle                                      102       2       2       1   .data       
+     intrrupt_state                             104       2       2       3   .data       
+     led_state                                  106       2       2       3   .data       
+     inactive_five                              108       2       2       5   .data       
+     state_check                                10A       2       2       3   .bss        
      _Vector_11                                FFE8       2       2       0   .abs_section_ffe8
      _Vector_22                                FFD2       2       2       0   .abs_section_ffd2
 MODULE:                 -- start08_c.obj --
@@ -194,7 +199,7 @@ MODULE:                 -- start08_c.obj --
 - VARIABLES:
      _startupData                              18E4       6       6       4   .startData  
 - LABELS:
-     __SEG_END_SSTACK                           188       0       0       1               
+     __SEG_END_SSTACK                           18C       0       0       1               
 MODULE:                 -- mc9s08aw60_c.obj --
 - PROCEDURES:
 - VARIABLES:
@@ -208,7 +213,7 @@ MODULE:                 -- mc9s08aw60_c.obj --
      _PTDDD                                       7       1       1       0   .abs_section_7
      _PTED                                        8       1       1       0   .abs_section_8
      _PTEDD                                       9       1       1       0   .abs_section_9
-     _PTFD                                        A       1       1       3   .abs_section_a
+     _PTFD                                        A       1       1       4   .abs_section_a
      _PTFDD                                       B       1       1       1   .abs_section_b
      _PTGD                                        C       1       1       0   .abs_section_c
      _PTGDD                                       D       1       1       0   .abs_section_d
@@ -218,7 +223,7 @@ MODULE:                 -- mc9s08aw60_c.obj --
      _APCTL1                                     17       1       1       0   .abs_section_17
      _APCTL2                                     18       1       1       0   .abs_section_18
      _IRQSC                                      1C       1       1       0   .abs_section_1c
-     _KBI1SC                                     1E       1       1       5   .abs_section_1e
+     _KBI1SC                                     1E       1       1       8   .abs_section_1e
      _KBI1PE                                     1F       1       1       1   .abs_section_1f
      _TPM1SC                                     20       1       1       2   .abs_section_20
      _TPM1C0SC                                   25       1       1       0   .abs_section_25
@@ -317,46 +322,31 @@ MODULE:                 -- mc9s08aw60_c.obj --
      _DBGF                                     1814       2       2       0   .abs_section_1814
 MODULE:                 -- rtshc08.o (ansiis.lib) --
 - PROCEDURES:
-     _PUSH_ARGS_L                              1991      20      32       2   .text       
-     _ENTER_UNARY_L                            19B1      29      41       1   .text       
-     _ENTER_BINARY_L                           19DA      16      22       1   .text       
-     _ENTER_BINARY_L_RC                        19F0      19      25       1   .text       
-     _IDIVMOD                                  1A09      69     105       1   .text       
-     _SPLITSIGN                                1A72      1C      28       1   .text       
-     _LDIVMOD                                  1A8E      A4     164       1   .text       
-     _NEG_L_HX                                 1B32      13      19       2   .text       
-     _ABS_L_HX                                 1B45       6       6       2   .text       
-     _SPLITSIGN_L                              1B4B       A      10       1   .text       
-     _LMODS_k_is_k_mod_j                       1B55      18      24       1   .text       
-     _LCMP_k_rel_j                             1B6D      1F      31       1   .text       
-     _IMODS_STAR08                             1B8C      25      37       1   .text       
-     _LINC                                     1BB1      16      22       1   .text       
-     _LMODS                                    1BC7       6       6       1   .text       
-     _LCMP_RC                                  1BCD       6       6       1   .text       
-     _POP32                                    1BD3      1A      26       1   .text       
-     _SEXT16_32                                1BED       D      13       1   .text       
+     _IDIVMOD                                  19BD      69     105       1   .text       
+     _SPLITSIGN                                1A26      1C      28       1   .text       
+     _IMODS_STAR08                             1A42      25      37       1   .text       
 - VARIABLES:
 
 *********************************************************************************************
 MODULE STATISTIC
   Name                                      Data   Code  Const
 ---------------------------------------------------------------------------------------------
-  main_c.obj                                   8    159      4
+  main_c.obj                                  12    203      4
   start08_c.obj                                0    132      0
   mc9s08aw60_c.obj                           138      0      0
-  rtshc08.o (ansiis.lib)                       0    617      0
-  other                                      128     16     11
+  rtshc08.o (ansiis.lib)                       0    170      0
+  other                                      128     16     15
 
 *********************************************************************************************
 SECTION USE IN OBJECT-ALLOCATION SECTION
 ---------------------------------------------------------------------------------------------
 SECTION: ".text"
-  main TPM1_overflow intKBI_SW PeriphInit _PUSH_ARGS_L _ENTER_UNARY_L 
-  _ENTER_BINARY_L _ENTER_BINARY_L_RC _IDIVMOD _SPLITSIGN _LDIVMOD _NEG_L_HX 
-  _ABS_L_HX _SPLITSIGN_L _LMODS_k_is_k_mod_j _LCMP_k_rel_j _IMODS_STAR08 _LINC 
-  _LMODS _LCMP_RC _POP32 _SEXT16_32 
+  setKBI main TPM1_overflow intKBI_SW PeriphInit _IDIVMOD _SPLITSIGN 
+  _IMODS_STAR08 
 SECTION: ".data"
-  count cycle init 
+  count cycle intrrupt_state led_state inactive_five 
+SECTION: ".bss"
+  state_check 
 SECTION: ".init"
   loadByte Init _Startup 
 SECTION: ".abs_section_ffe8"
@@ -612,7 +602,7 @@ OBJECT LIST SORTED BY ADDRESS
      _PTDDD                                       7       1       1       0   .abs_section_7
      _PTED                                        8       1       1       0   .abs_section_8
      _PTEDD                                       9       1       1       0   .abs_section_9
-     _PTFD                                        A       1       1       3   .abs_section_a
+     _PTFD                                        A       1       1       4   .abs_section_a
      _PTFDD                                       B       1       1       1   .abs_section_b
      _PTGD                                        C       1       1       0   .abs_section_c
      _PTGDD                                       D       1       1       0   .abs_section_d
@@ -624,7 +614,7 @@ OBJECT LIST SORTED BY ADDRESS
      _APCTL1                                     17       1       1       0   .abs_section_17
      _APCTL2                                     18       1       1       0   .abs_section_18
      _IRQSC                                      1C       1       1       0   .abs_section_1c
-     _KBI1SC                                     1E       1       1       5   .abs_section_1e
+     _KBI1SC                                     1E       1       1       8   .abs_section_1e
      _KBI1PE                                     1F       1       1       1   .abs_section_1f
      _TPM1SC                                     20       1       1       2   .abs_section_20
      _TPM1CNT                                    21       2       2       0   .abs_section_21
@@ -678,9 +668,12 @@ OBJECT LIST SORTED BY ADDRESS
      _TPM2C0V                                    66       2       2       0   .abs_section_66
      _TPM2C1SC                                   68       1       1       0   .abs_section_68
      _TPM2C1V                                    69       2       2       0   .abs_section_69
-     count                                      100       4       4       4   .data       
-     cycle                                      104       2       2       2   .data       
-     init                                       106       2       2       4   .data       
+     count                                      100       2       2       4   .data       
+     cycle                                      102       2       2       1   .data       
+     intrrupt_state                             104       2       2       3   .data       
+     led_state                                  106       2       2       3   .data       
+     inactive_five                              108       2       2       5   .data       
+     state_check                                10A       2       2       3   .bss        
      _SRS                                      1800       1       1       0   .abs_section_1800
      _SBDFR                                    1801       1       1       0   .abs_section_1801
      _SOPT                                     1802       1       1       1   .abs_section_1802
@@ -725,28 +718,14 @@ OBJECT LIST SORTED BY ADDRESS
      loadByte                                  1860       E      14       5   .init       
      Init                                      186E      6D     109       1   .init       
      _Startup                                  18DB       9       9       0   .init       
-     main                                      18F2       6       6       1   .text       
-     TPM1_overflow                             18F8      61      97       1   .text       
-     intKBI_SW                                 1959       B      11       1   .text       
-     PeriphInit                                1964      2D      45       1   .text       
-     _PUSH_ARGS_L                              1991      20      32       2   .text       
-     _ENTER_UNARY_L                            19B1      29      41       1   .text       
-     _ENTER_BINARY_L                           19DA      16      22       1   .text       
-     _ENTER_BINARY_L_RC                        19F0      19      25       1   .text       
-     _IDIVMOD                                  1A09      69     105       1   .text       
-     _SPLITSIGN                                1A72      1C      28       1   .text       
-     _LDIVMOD                                  1A8E      A4     164       1   .text       
-     _NEG_L_HX                                 1B32      13      19       2   .text       
-     _ABS_L_HX                                 1B45       6       6       2   .text       
-     _SPLITSIGN_L                              1B4B       A      10       1   .text       
-     _LMODS_k_is_k_mod_j                       1B55      18      24       1   .text       
-     _LCMP_k_rel_j                             1B6D      1F      31       1   .text       
-     _IMODS_STAR08                             1B8C      25      37       1   .text       
-     _LINC                                     1BB1      16      22       1   .text       
-     _LMODS                                    1BC7       6       6       1   .text       
-     _LCMP_RC                                  1BCD       6       6       1   .text       
-     _POP32                                    1BD3      1A      26       1   .text       
-     _SEXT16_32                                1BED       D      13       1   .text       
+     setKBI                                    18F2       5       5       1   .text       
+     main                                      18F7       6       6       1   .text       
+     TPM1_overflow                             18FD      6A     106       1   .text       
+     intKBI_SW                                 1967      2A      42       1   .text       
+     PeriphInit                                1991      2C      44       1   .text       
+     _IDIVMOD                                  19BD      69     105       1   .text       
+     _SPLITSIGN                                1A26      1C      28       1   .text       
+     _IMODS_STAR08                             1A42      25      37       1   .text       
      _Vector_22                                FFD2       2       2       0   .abs_section_ffd2
      _Vector_11                                FFE8       2       2       0   .abs_section_ffe8
 
@@ -755,22 +734,24 @@ UNUSED-OBJECTS SECTION
 ---------------------------------------------------------------------------------------------
 NOT USED PROCEDURES
 rtshc08.o (ansiis.lib):
-  _PUSH_ARGS_D _ENTER_UNARY_L64 _ENTER_UNARY_L64_4 _ENTER_BINARY_L_LC 
-  _ENTER_BINARY_L64 _ENTER_BINARY_L64_LC _ENTER_BINARY_L64_RC 
-  _LADD_k_is_k_plus_j _k_is_k_plus_j_l _k_is_k_plus_j_i _LSUB_k_is_k_minus_j 
-  _LAND_k_is_k_and_j _LOR_k_is_k_or_j _LXOR_k_is_k_xor_j _LMUL_k_is_k_mul_j 
-  _LMODU_k_is_k_mod_j _LDIVU_k_is_k_div_j _LDIVS_k_is_k_div_j _CMP24_k_rel_j 
-  _BMULS _BDIVS _BMODS _IMUL_STAR08 _IDIVS_STAR08 _IDIVU_STAR08 _IMODU_STAR08 
-  _IDIVU_8 _IMODU_8 _IASR _ILSR _ILSL _ICMP _LDEC _LNEG _LNOT _LADD _LADD_RC 
-  _LSUB _LSUB_LC _LSUB_RC _LAND _LAND_RC _LOR _LOR_RC _LXOR _LXOR_RC _LMUL 
-  _LMUL_RC _LDIVS _LDIVS_LC _LDIVS_RC _LDIVU _LDIVU_LC _LDIVU_RC _LMODS_LC 
-  _LMODS_RC _LMODU _LMODU_LC _LMODU_RC _LASR _LLSR _LLSL _LCMP _PUSH_ARGS_24 
-  _ENTER_BINARY_24_RC _ENTER_BINARY_24 _CMP24 _CMP24_RC _COPY _COPY_L _POP64 
-  _STORE32 _STORE64 _SEXT8_32 _CALL_STAR08 _CALL_STAR08_FAR _Jump_Table_Addr 
-  _Jump_Table_Offset _Jump_Table_Header_Addr _Jump_Table_Header_Offset 
-  _Search_Table_16_Addr _Search_Table_16_Offset _Search_Table_8_Addr 
-  _Search_Table_8_Offset _PUSH_CC _POP_CC _CONV_FAR_TO_NEAR _CONV_FAR_TO_LINEAR 
-  _CONV_LINEAR_TO_FAR 
+  _PUSH_ARGS_L _PUSH_ARGS_D _ENTER_UNARY_L _ENTER_UNARY_L64 _ENTER_UNARY_L64_4 
+  _ENTER_BINARY_L _ENTER_BINARY_L_RC _ENTER_BINARY_L_LC _ENTER_BINARY_L64 
+  _ENTER_BINARY_L64_LC _ENTER_BINARY_L64_RC _LADD_k_is_k_plus_j 
+  _k_is_k_plus_j_l _k_is_k_plus_j_i _LSUB_k_is_k_minus_j _LAND_k_is_k_and_j 
+  _LOR_k_is_k_or_j _LXOR_k_is_k_xor_j _LMUL_k_is_k_mul_j _LDIVMOD _NEG_L_HX 
+  _ABS_L_HX _SPLITSIGN_L _LMODU_k_is_k_mod_j _LDIVU_k_is_k_div_j 
+  _LMODS_k_is_k_mod_j _LDIVS_k_is_k_div_j _LCMP_k_rel_j _CMP24_k_rel_j _BMULS 
+  _BDIVS _BMODS _IMUL_STAR08 _IDIVS_STAR08 _IDIVU_STAR08 _IMODU_STAR08 _IDIVU_8 
+  _IMODU_8 _IASR _ILSR _ILSL _ICMP _LINC _LDEC _LNEG _LNOT _LADD _LADD_RC _LSUB 
+  _LSUB_LC _LSUB_RC _LAND _LAND_RC _LOR _LOR_RC _LXOR _LXOR_RC _LMUL _LMUL_RC 
+  _LDIVS _LDIVS_LC _LDIVS_RC _LDIVU _LDIVU_LC _LDIVU_RC _LMODS _LMODS_LC 
+  _LMODS_RC _LMODU _LMODU_LC _LMODU_RC _LASR _LLSR _LLSL _LCMP _LCMP_RC 
+  _PUSH_ARGS_24 _ENTER_BINARY_24_RC _ENTER_BINARY_24 _CMP24 _CMP24_RC _COPY 
+  _COPY_L _POP32 _POP64 _STORE32 _STORE64 _SEXT8_32 _SEXT16_32 _CALL_STAR08 
+  _CALL_STAR08_FAR _Jump_Table_Addr _Jump_Table_Offset _Jump_Table_Header_Addr 
+  _Jump_Table_Header_Offset _Search_Table_16_Addr _Search_Table_16_Offset 
+  _Search_Table_8_Addr _Search_Table_8_Offset _PUSH_CC _POP_CC 
+  _CONV_FAR_TO_NEAR _CONV_FAR_TO_LINEAR _CONV_LINEAR_TO_FAR 
 NOT USED VARIABLES
 rtshc08.o (ansiis.lib):
   _PowOfTwo_8 _PowOfTwo_16 _PowOfTwo_32 errno 
@@ -778,25 +759,37 @@ rtshc08.o (ansiis.lib):
 *********************************************************************************************
 COPYDOWN SECTION
 ---------------------------------------------------------------------------------------------
-------- ROM-ADDRESS: 0x1BFA ---- SIZE       4 ---
+------- ROM-ADDRESS: 0x1A67 ---- SIZE       4 ---
 Filling bytes inserted
- 00050103
-------- ROM-ADDRESS: 0x1BFE ---- RAM-ADDRESS: 0x103 ---- SIZE       1 ---
-Name of initialized Object : count:3
- 01
-------- ROM-ADDRESS: 0x1BFF ---- SIZE       1 ---
+ 00090101
+------- ROM-ADDRESS: 0x1A6B ---- RAM-ADDRESS: 0x101 ---- SIZE       1 ---
+Name of initialized Object : count:1
+ 05
+------- ROM-ADDRESS: 0x1A6C ---- SIZE       1 ---
 Filling bytes inserted
  00
-------- ROM-ADDRESS: 0x1C00 ---- RAM-ADDRESS: 0x105 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0x1A6D ---- RAM-ADDRESS: 0x103 ---- SIZE       1 ---
 Name of initialized Object : cycle:1
- 01
-------- ROM-ADDRESS: 0x1C01 ---- SIZE       1 ---
+ 05
+------- ROM-ADDRESS: 0x1A6E ---- SIZE       1 ---
 Filling bytes inserted
  00
-------- ROM-ADDRESS: 0x1C02 ---- RAM-ADDRESS: 0x107 ---- SIZE       1 ---
-Name of initialized Object : init:1
- 08
-------- ROM-ADDRESS: 0x1C03 ---- SIZE       2 ---
+------- ROM-ADDRESS: 0x1A6F ---- RAM-ADDRESS: 0x105 ---- SIZE       1 ---
+Name of initialized Object : intrrupt_state:1
+ 01
+------- ROM-ADDRESS: 0x1A70 ---- SIZE       1 ---
+Filling bytes inserted
+ 00
+------- ROM-ADDRESS: 0x1A71 ---- RAM-ADDRESS: 0x107 ---- SIZE       1 ---
+Name of initialized Object : led_state:1
+ 01
+------- ROM-ADDRESS: 0x1A72 ---- SIZE       1 ---
+Filling bytes inserted
+ 00
+------- ROM-ADDRESS: 0x1A73 ---- RAM-ADDRESS: 0x109 ---- SIZE       1 ---
+Name of initialized Object : inactive_five:1
+ 01
+------- ROM-ADDRESS: 0x1A74 ---- SIZE       2 ---
 Filling bytes inserted
  0000
 
@@ -805,22 +798,16 @@ OBJECT-DEPENDENCIES SECTION
 ---------------------------------------------------------------------------------------------
 Init                      USES _startupData loadByte 
 _Startup                  USES __SEG_END_SSTACK Init main 
+setKBI                    USES _KBI1SC 
 main                      USES PeriphInit 
-TPM1_overflow             USES _TPM1SC cycle _SEXT16_32 count _LMODS _LCMP_RC 
-                                init _IMODS_STAR08 _PTFD _LINC _POP32 
-intKBI_SW                 USES _KBI1SC cycle 
+TPM1_overflow             USES _TPM1SC state_check count cycle _IMODS_STAR08 
+                                inactive_five _KBI1SC setKBI led_state _PTFD 
+intKBI_SW                 USES _KBI1SC intrrupt_state inactive_five 
+                                state_check count _PTFD 
 PeriphInit                USES _SOPT _KBI1SC _KBI1PE _PTDPE _PTFDD _PTFD 
                                 _ICGC2 _ICGC1 _TPM1SC _TPM1MOD _ICGS1 
-_ENTER_BINARY_L           USES _PUSH_ARGS_L 
-_ENTER_BINARY_L_RC        USES _PUSH_ARGS_L 
 _SPLITSIGN                USES _IDIVMOD 
-_ABS_L_HX                 USES _NEG_L_HX 
-_SPLITSIGN_L              USES _ABS_L_HX 
-_LMODS_k_is_k_mod_j       USES _SPLITSIGN_L _LDIVMOD _NEG_L_HX 
 _IMODS_STAR08             USES _SPLITSIGN 
-_LINC                     USES _ENTER_UNARY_L 
-_LMODS                    USES _ENTER_BINARY_L _LMODS_k_is_k_mod_j 
-_LCMP_RC                  USES _ENTER_BINARY_L_RC _LCMP_k_rel_j 
 _Vector_22                USES intKBI_SW 
 _Vector_11                USES TPM1_overflow 
 
@@ -845,45 +832,13 @@ DEPENDENCY TREE
  | 
  +- TPM1_overflow       
     | 
-    +- _SEXT16_32          
-    |    
-    +- _LMODS              
-    |  | 
-    |  +- _ENTER_BINARY_L     
-    |  |  | 
-    |  |  +- _PUSH_ARGS_L        
-    |  |       
-    |  +- _LMODS_k_is_k_mod_j 
-    |     | 
-    |     +- _SPLITSIGN_L        
-    |     |  | 
-    |     |  +- _ABS_L_HX           
-    |     |     | 
-    |     |     +- _NEG_L_HX           
-    |     |          
-    |     +- _LDIVMOD            
-    |     |    
-    |     +- _NEG_L_HX            (see above)
-    |        
-    +- _LCMP_RC            
-    |  | 
-    |  +- _ENTER_BINARY_L_RC  
-    |  |  | 
-    |  |  +- _PUSH_ARGS_L         (see above)
-    |  |     
-    |  +- _LCMP_k_rel_j       
-    |       
     +- _IMODS_STAR08       
     |  | 
     |  +- _SPLITSIGN          
     |     | 
     |     +- _IDIVMOD            
     |          
-    +- _LINC               
-    |  | 
-    |  +- _ENTER_UNARY_L      
-    |       
-    +- _POP32              
+    +- setKBI              
          
  _Vector_22          
  | 
@@ -895,6 +850,6 @@ STATISTIC SECTION
 
 ExeFile:
 --------
-Number of blocks to be downloaded: 5
-Total size of all blocks to be downloaded: 939
+Number of blocks to be downloaded: 6
+Total size of all blocks to be downloaded: 540
 
